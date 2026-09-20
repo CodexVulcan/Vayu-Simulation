@@ -6,8 +6,8 @@ _Generated 2026-09-20T03:30:45.091171+00:00. Regenerate with `python3 run_all.py
 
 | Metric | Fixed-gain PID | DOB + UKF | Improvement |
 |---|---|---|---|
-| RMS pointing error | 38.0 mrad | 11.7 mrad | 69.3% reduction |
-| Peak pointing error | 162.5 mrad | 43.1 mrad | 73.5% reduction |
+| RMS pointing error | 38.0 mrad | 11.9 mrad | 68.7% reduction |
+| Peak pointing error | 162.5 mrad | 44.4 mrad | 72.7% reduction |
 
 ## 7.2 Battery capacity retention — Li-ion vs LiFePO4 + heater
 
