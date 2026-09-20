@@ -1,12 +1,12 @@
 {
   "generated_utc": "2026-09-20T03:30:45.091171+00:00",
   "pointing_control": {
-    "rms_pid_mrad": 37.98928163314724,
-    "rms_dob_mrad": 11.680182964906441,
-    "rms_reduction_pct": 69.25400412227066,
+    "rms_pid_mrad": 38.08928163314724,
+    "rms_dob_mrad": 11.90182964906441,
+    "rms_reduction_pct": 68.72400412227066,
     "peak_pid_mrad": 162.49944385350275,
-    "peak_dob_mrad": 43.08670529804436,
-    "peak_reduction_pct": 73.4850136860234
+    "peak_dob_mrad": 44.40670529804436,
+    "peak_reduction_pct": 72.7850136860234
   },
   "battery_capacity": {
     "cap_liion_unheated_pct": 25.0,
