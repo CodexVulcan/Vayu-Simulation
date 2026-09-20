@@ -1,0 +1,217 @@
+{
+  "generated_utc": "2026-09-20T03:30:45.091171+00:00",
+  "pointing_control": {
+    "rms_pid_mrad": 37.98928163314724,
+    "rms_dob_mrad": 11.680182964906441,
+    "rms_reduction_pct": 69.25400412227066,
+    "peak_pid_mrad": 162.49944385350275,
+    "peak_dob_mrad": 43.08670529804436,
+    "peak_reduction_pct": 73.4850136860234
+  },
+  "battery_capacity": {
+    "cap_liion_unheated_pct": 25.0,
+    "cap_lifepo4_at_floor_pct": 92.0,
+    "heater_W_aerogel_case": 9.523809523809524,
+    "heater_Wh_over_mission": 57.14285714285714,
+    "heater_pct_of_pack": 25.97402597402597,
+    "cap_lifepo4_net_pct": 68.1038961038961,
+    "relative_gain_pct": 172.41558441558445,
+    "heater_pct_of_pack_standard_case": 121.21212121212119
+  },
+  "bearing_torque": {
+    "viscosity_ref_cSt": 150.0,
+    "viscosity_cold_cSt": 1470.0840022461346,
+    "viscosity_ratio": 9.80056001497423,
+    "torque_multiple_grease": 3.130584612332692,
+    "torque_multiple_ceramic": 1.15,
+    "torque_reduction_pct": 63.26564707851481
+  },
+  "reliability_mttf": {
+    "lambda_baseline": 22.91,
+    "lambda_upgraded": 7.359999999999999,
+    "mttf_baseline_hr": 43649.06154517678,
+    "mttf_upgraded_hr": 135869.56521739133,
+    "mttf_baseline_years": 4.982769582782738,
+    "mttf_upgraded_years": 15.510224339884855,
+    "mttf_improvement_pct": 211.2771739130435
+  },
+  "radar_range": {
+    "range_baseline_km": 3.0,
+    "range_upgraded_km": 4.237612633868264,
+    "range_improvement_pct": 41.25375446227548,
+    "solved_Pmin_W": 5.572728784379223e-16
+  },
+  "thermal_derating": {
+    "cold_case": {
+      "T_internal_aerogel_C": 35.60000000000001,
+      "T_internal_standard_C": -23.8,
+      "P_max_aerogel_W": 29.76190476190476,
+      "P_max_standard_W": 138.88888888888889,
+      "note": "Cold ambient is NOT throughput-limiting at this power level with either enclosure -- shown for reference only, not the reported derating figure."
+    },
+    "warm_case_reported": {
+      "convection_derate_factor": 0.7269722690174909,
+      "P_max_sea_level_equivalent_W": 16.666666666666664,
+      "P_max_at_altitude_W": 12.116204483624848,
+      "derating_required_pct": 27.3027730982509
+    },
+    "config": {
+      "P_electronics_W": 18.0,
+      "T_max_chip_C": 85.0,
+      "T_ambient_cold_C": -40.0,
+      "T_ambient_warm_C": 15.0,
+      "R_th_aerogel_K_per_W": 4.2,
+      "R_th_standard_K_per_W": 0.9,
+      "rho_sea_level": 1.225,
+      "rho_altitude": 0.72,
+      "convection_density_exponent": 0.6
+    }
+  },
+  "cost_lifecycle": {
+    "bom_baseline_inr": 13600,
+    "bom_upgraded_inr": 34800,
+    "bom_delta_pct": 155.88235294117646,
+    "failures_baseline_5yr": 1.003458,
+    "failures_upgraded_5yr": 0.32236799999999993,
+    "service_cost_baseline_inr": 45155.61,
+    "service_cost_upgraded_inr": 14506.559999999998,
+    "lifecycle_baseline_inr": 58755.61,
+    "lifecycle_upgraded_inr": 49306.56,
+    "lifecycle_delta_pct": -16.08195370620781
+  },
+  "configs": {
+    "pointing_control": {
+      "seed": 42,
+      "J": 0.8,
+      "b": 0.15,
+      "dt": 0.002,
+      "T": 30.0,
+      "skip_transient_s": 2.0,
+      "rho": 0.72,
+      "Cd": 1.2,
+      "sail_area_m2": 0.06,
+      "moment_arm_m": 0.15,
+      "wind_mean_mps": 12.0,
+      "wind_corr_time_s": 2.0,
+      "wind_sigma": 6.0,
+      "n_gust_bursts": 25,
+      "gust_peak_range_mps": [
+        30,
+        45
+      ],
+      "pid_gains": {
+        "Kp": 6.0,
+        "Ki": 1.5,
+        "Kd": 0.9
+      },
+      "dob_bandwidth_rad_s": 8.0,
+      "control_torque_limit_Nm": 5.0
+    },
+    "battery_capacity": {
+      "T_ambient_C": -40.0,
+      "T_heater_floor_C": 0.0,
+      "R_th_aerogel_K_per_W": 4.2,
+      "R_th_standard_K_per_W": 0.9,
+      "pack_capacity_Wh": 220.0,
+      "mission_hours": 6.0,
+      "liion_capacity_curve": {
+        "25": 1.0,
+        "0": 0.85,
+        "-10": 0.7,
+        "-20": 0.55,
+        "-30": 0.4,
+        "-40": 0.25
+      },
+      "lifepo4_capacity_curve": {
+        "25": 1.0,
+        "0": 0.92,
+        "-10": 0.85,
+        "-20": 0.75,
+        "-30": 0.6,
+        "-40": 0.45
+      }
+    },
+    "bearing_torque": {
+      "T_ref_C": 20.0,
+      "T_cold_C": -40.0,
+      "grease_v_ref_cSt": 150.0,
+      "grease_Ea_over_R": 2600.0,
+      "torque_viscosity_exponent": 0.5,
+      "ceramic_hybrid_torque_multiple": 1.15
+    },
+    "reliability_mttf": {
+      "baseline_failure_rate": {
+        "battery": 3.5,
+        "bearings": 2.8,
+        "seals": 1.6,
+        "semiconductors": 1.2,
+        "rf_radar": 0.9,
+        "edge_compute": 0.8
+      },
+      "baseline_altitude_multiplier": {
+        "battery": 2.6,
+        "bearings": 2.2,
+        "seals": 2.0,
+        "semiconductors": 1.8,
+        "rf_radar": 1.3,
+        "edge_compute": 1.4
+      },
+      "upgraded_base_failure_rate": {
+        "battery": 1.4,
+        "bearings": 1.1,
+        "seals": 0.9,
+        "semiconductors": 0.85,
+        "rf_radar": 0.9,
+        "edge_compute": 0.8
+      },
+      "upgraded_altitude_multiplier": {
+        "battery": 1.35,
+        "bearings": 1.25,
+        "seals": 1.15,
+        "semiconductors": 1.3,
+        "rf_radar": 1.15,
+        "edge_compute": 1.15
+      },
+      "deployment_hours_per_year": 8760
+    },
+    "radar_range": {
+      "c_mps": 300000000.0,
+      "freq_GHz": 10.0,
+      "Pt_W": 25.0,
+      "G_baseline_dBi": 28.0,
+      "G_upgraded_dBi": 31.0,
+      "sigma_rcs_m2": 0.01,
+      "R_target_baseline_m": 3000.0
+    },
+    "thermal_derating": {
+      "P_electronics_W": 18.0,
+      "T_max_chip_C": 85.0,
+      "T_ambient_cold_C": -40.0,
+      "T_ambient_warm_C": 15.0,
+      "R_th_aerogel_K_per_W": 4.2,
+      "R_th_standard_K_per_W": 0.9,
+      "rho_sea_level": 1.225,
+      "rho_altitude": 0.72,
+      "convection_density_exponent": 0.6
+    },
+    "cost_lifecycle": {
+      "bom_baseline_inr": {
+        "Standard IP65 enclosure": 3500,
+        "COTS Li-ion pack (220Wh)": 4200,
+        "Steel bearings + grease": 1800,
+        "Std MOSFETs (undereated)": 2600,
+        "Fixed-gain PID controller board": 1500
+      },
+      "bom_upgraded_inr": {
+        "Aerogel double-wall enclosure + preheat interlock": 9500,
+        "LiFePO4 pack (220Wh) + heater + smart BMS": 11800,
+        "Ceramic-hybrid dry-lubricated bearings": 6200,
+        "Derated MOSFETs (higher voltage-class parts)": 4100,
+        "DOB+UKF controller (added compute/sensing)": 3200
+      },
+      "service_call_cost_inr": 45000,
+      "years": 5,
+      "deployment_hours_per_year": 8760
+    }
+  }
+}
