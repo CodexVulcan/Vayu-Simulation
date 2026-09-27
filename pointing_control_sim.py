@@ -5,8 +5,13 @@ WHAT THIS COMPUTES
 -------------------
 RMS and peak gimbal pointing error for two controllers under a modelled
 high-altitude gust-disturbance profile evaluated across N=40 Monte Carlo seeds:
-  - Baseline: fixed-gain PID (tuned once at nominal wind).
+  - Baseline: fixed-gain PID, tuned near critical damping at a 5 rad/s
+    bandwidth (a competently-tuned baseline, not a straw man).
   - Upgrade:  PID + First-Order Disturbance Observer (DOB) feedforward.
+
+Also reports FOV lock-retention: % of simulated time each controller
+keeps pointing error inside a stated sensor field-of-view half-angle,
+which is what actually matters for keeping a target in frame.
 
 DERIVED vs ASSUMED
 -------------------
@@ -14,12 +19,18 @@ DERIVED (Monte Carlo statistical output across N=40 runs):
   - Mean RMS pointing error (PID vs DOB) & 95% Confidence Interval
   - Mean Peak pointing error (PID vs DOB)
   - Mean % pointing error reduction
+  - Mean % of time within FOV half-angle (lock retention), PID vs DOB
 
 ASSUMED (see CONFIG below):
   - Gimbal inertia J, damping b
   - Wind->torque dynamic pressure model (rho = 0.78 kg/m^3 at 4,500m ASL, ISA standard)
   - Actuator sizing constraint: control torque limit >= peak gust torque (8.5 N*m peak at 45 m/s)
   - DOB observer bandwidth & rate sensor noise floor
+  - PID gains: tuned to ~5 rad/s closed-loop bandwidth, damping ratio ~0.9
+    (near-critically-damped, representative of a competently commissioned
+    fixed-gain loop -- not deliberately detuned)
+  - FOV half-angle: 10 mrad (representative narrow-FOV EO/IR tracking gate;
+    replace with the actual sensor spec when known)
 """
 import numpy as np
 
@@ -40,15 +51,18 @@ CONFIG = {
     "wind_sigma": 6.0,        # turbulence intensity
     "n_gust_bursts": 25,
     "gust_peak_range_mps": (30.0, 45.0),
-    "pid_gains": {"Kp": 6.0, "Ki": 1.5, "Kd": 0.9},
+    # PID gains re-tuned to a ~5 rad/s closed-loop bandwidth, damping ratio
+    # ~0.9 (near-critical): Kp = J*wn^2, Kd = 2*zeta*J*wn - b, Ki modest to
+    # limit windup. This is a fair, competently-tuned fixed-gain baseline.
+    "pid_gains": {"Kp": 20.0, "Ki": 2.0, "Kd": 7.05},
     "dob_bandwidth_rad_s": 8.0,
     "control_torque_limit_Nm": 10.0,  # Sized for peak gust load (8.5 N*m at 45 m/s)
     "gyro_noise_std_rad_s": 0.001,    # Sensor noise on rate measurement
+    "fov_half_angle_mrad": 10.0,      # lock-retention acceptance gate
 }
 
 
 def _build_disturbance(cfg, N, dt, rng):
-    # 1. Background wind turbulence (Ornstein-Uhlenbeck process)
     v = np.zeros(N)
     v[0] = cfg["wind_mean_mps"]
     for i in range(1, N):
@@ -56,7 +70,6 @@ def _build_disturbance(cfg, N, dt, rng):
              + cfg["wind_sigma"] * np.sqrt(dt) * rng.standard_normal()
         v[i] = v[i - 1] + dv
 
-    # 2. Add discrete gust events (Gaussian spatial/temporal envelope)
     gust_idx = rng.choice(N, size=cfg["n_gust_bursts"], replace=False)
     width = int(0.5 / dt)
     for gt in gust_idx:
@@ -64,15 +77,13 @@ def _build_disturbance(cfg, N, dt, rng):
         for k in range(max(0, gt - width), min(N, gt + width)):
             v[k] = max(v[k], peak * np.exp(-((k - gt) * dt / 0.3) ** 2))
 
-    # 3. Dynamic pressure torque: Tau = 0.5 * rho * Cd * A * l * v^2
     def wind_to_torque(vv):
         return 0.5 * cfg["rho"] * cfg["Cd"] * cfg["sail_area_m2"] * cfg["moment_arm_m"] * (vv ** 2)
 
     tau_magnitude = wind_to_torque(v)
 
-    # Low-frequency directional drift (prevents non-physical 2ms sign chatter)
     dir_raw = rng.standard_normal(N)
-    b_lp = np.exp(-dt / 1.0)  # 1-second directional correlation filter
+    b_lp = np.exp(-dt / 1.0)
     dir_smooth = np.zeros(N)
     curr_dir = 1.0
     for i in range(N):
@@ -96,7 +107,7 @@ def _simulate(cfg, tau_dist, use_dob, rng):
     prev_omega_meas = 0.0
 
     for i in range(N):
-        err = -theta  # reference is 0 rad (station-keeping)
+        err = -theta
         integ += err * dt
         deriv = (err - prev_err) / dt
 
@@ -104,18 +115,15 @@ def _simulate(cfg, tau_dist, use_dob, rng):
         tau_cmd = tau_pid - (dist_hat if use_dob else 0.0)
         tau_cmd = np.clip(tau_cmd, -limit, limit)
 
-        # Plant dynamics
         alpha = (tau_cmd + tau_dist[i] - b * omega) / J
         omega += alpha * dt
         theta += omega * dt
 
         if use_dob:
-            # Rate gyro measurement with noise
             omega_meas = omega + noise_std * rng.standard_normal()
             alpha_est = (omega_meas - prev_omega_meas) / dt
             prev_omega_meas = omega_meas
 
-            # Disturbance Observer estimate: Tau_dist_est = J * alpha + b * omega - Tau_cmd
             tau_dist_est_raw = J * alpha_est + b * omega_meas - tau_cmd
             dist_hat += cfg["dob_bandwidth_rad_s"] * (tau_dist_est_raw - dist_hat) * dt
 
@@ -128,10 +136,12 @@ def _simulate(cfg, tau_dist, use_dob, rng):
 def run(cfg=CONFIG):
     n_seeds = cfg.get("n_seeds", 40)
     base_seed = cfg.get("base_seed", 42)
+    fov = cfg.get("fov_half_angle_mrad", 10.0) / 1000.0  # rad
 
     rms_pid_list, rms_dob_list = [], []
     peak_pid_list, peak_dob_list = [], []
     cuts_list = []
+    lock_pid_list, lock_dob_list = [], []
 
     skip = int(cfg["skip_transient_s"] / cfg["dt"])
 
@@ -145,18 +155,26 @@ def run(cfg=CONFIG):
         err_pid = _simulate(cfg, tau_dist, use_dob=False, rng=rng)
         err_dob = _simulate(cfg, tau_dist, use_dob=True, rng=rng)
 
-        rms_p = float(np.sqrt(np.mean(err_pid[skip:] ** 2))) * 1000.0  # mrad
-        rms_d = float(np.sqrt(np.mean(err_dob[skip:] ** 2))) * 1000.0  # mrad
-        peak_p = float(np.max(np.abs(err_pid[skip:]))) * 1000.0       # mrad
-        peak_d = float(np.max(np.abs(err_dob[skip:]))) * 1000.0       # mrad
+        ep = err_pid[skip:]
+        ed = err_dob[skip:]
+
+        rms_p = float(np.sqrt(np.mean(ep ** 2))) * 1000.0
+        rms_d = float(np.sqrt(np.mean(ed ** 2))) * 1000.0
+        peak_p = float(np.max(np.abs(ep))) * 1000.0
+        peak_d = float(np.max(np.abs(ed))) * 1000.0
 
         cut = (1.0 - rms_d / rms_p) * 100.0
+
+        lock_p = float(np.mean(np.abs(ep) <= fov)) * 100.0
+        lock_d = float(np.mean(np.abs(ed) <= fov)) * 100.0
 
         rms_pid_list.append(rms_p)
         rms_dob_list.append(rms_d)
         peak_pid_list.append(peak_p)
         peak_dob_list.append(peak_d)
         cuts_list.append(cut)
+        lock_pid_list.append(lock_p)
+        lock_dob_list.append(lock_d)
 
     mean_rms_pid = np.mean(rms_pid_list)
     mean_rms_dob = np.mean(rms_dob_list)
@@ -166,6 +184,9 @@ def run(cfg=CONFIG):
     mean_cut = np.mean(cuts_list)
     std_cut = np.std(cuts_list, ddof=1)
     ci95_cut = 1.96 * (std_cut / np.sqrt(n_seeds))
+
+    mean_lock_pid = np.mean(lock_pid_list)
+    mean_lock_dob = np.mean(lock_dob_list)
 
     return {
         "n_seeds": n_seeds,
@@ -178,6 +199,9 @@ def run(cfg=CONFIG):
         "peak_pid_mrad_mean": mean_peak_pid,
         "peak_dob_mrad_mean": mean_peak_dob,
         "peak_reduction_pct_mean": (1.0 - mean_peak_dob / mean_peak_pid) * 100.0,
+        "fov_half_angle_mrad": cfg.get("fov_half_angle_mrad", 10.0),
+        "lock_retention_pid_pct_mean": mean_lock_pid,
+        "lock_retention_dob_pct_mean": mean_lock_dob,
         "config": cfg,
     }
 
@@ -190,3 +214,7 @@ if __name__ == "__main__":
     print(f"  RMS Pointing Error Cut : {r['rms_reduction_pct_mean']:.1f}% (95% CI: +/-{r['rms_reduction_pct_ci95']:.1f}%, Range: {r['rms_reduction_pct_min']:.1f}%-{r['rms_reduction_pct_max']:.1f}%)")
     print(f"  Peak Error - PID       : {r['peak_pid_mrad_mean']:.2f} mrad")
     print(f"  Peak Error - DOB       : {r['peak_dob_mrad_mean']:.2f} mrad")
+    print(f"  Peak Error Cut         : {r['peak_reduction_pct_mean']:.1f}%")
+    print(f"  FOV half-angle gate    : {r['fov_half_angle_mrad']:.1f} mrad")
+    print(f"  Lock retention - PID   : {r['lock_retention_pid_pct_mean']:.1f}% of time in FOV")
+    print(f"  Lock retention - DOB   : {r['lock_retention_dob_pct_mean']:.1f}% of time in FOV")
