@@ -72,8 +72,8 @@ def main():
     md.append("## 7.1 Pointing control — DOB+UKF vs fixed-gain PID\n")
     md.append("| Metric | Fixed-gain PID | DOB + UKF | Improvement |")
     md.append("|---|---|---|---|")
-    md.append(f"| RMS pointing error | {pointing['rms_pid_mrad']:.1f} mrad | {pointing['rms_dob_mrad']:.1f} mrad | {pointing['rms_reduction_pct']:.1f}% reduction |")
-    md.append(f"| Peak pointing error | {pointing['peak_pid_mrad']:.1f} mrad | {pointing['peak_dob_mrad']:.1f} mrad | {pointing['peak_reduction_pct']:.1f}% reduction |\n")
+   md.append(f"| RMS pointing error (mean of N={pointing['n_seeds']} seeds) | {pointing['rms_pid_mrad_mean']:.1f} mrad | {pointing['rms_dob_mrad_mean']:.1f} mrad | {pointing['rms_reduction_pct_mean']:.1f}% reduction (95% CI ±{pointing['rms_reduction_pct_ci95']:.1f}%, range {pointing['rms_reduction_pct_min']:.1f}–{pointing['rms_reduction_pct_max']:.1f}%) |")
+md.append(f"| Peak pointing error (mean of N={pointing['n_seeds']} seeds) | {pointing['peak_pid_mrad_mean']:.1f} mrad | {pointing['peak_dob_mrad_mean']:.1f} mrad | {pointing['peak_reduction_pct_mean']:.1f}% reduction |\n")
 
     md.append("## 7.2 Battery capacity retention — Li-ion vs LiFePO4 + heater\n")
     md.append("| Configuration | Capacity outcome |")
